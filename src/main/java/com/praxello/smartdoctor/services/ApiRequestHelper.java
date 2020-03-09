@@ -18,6 +18,8 @@ import com.praxello.smartdoctor.model.allinstruction.InstructionResponse;
 import com.praxello.smartdoctor.model.allmedicine.MedicineResponse;
 import com.praxello.smartdoctor.model.allpatient.AddPatientResponse;
 import com.praxello.smartdoctor.model.allpatient.PatientResponse;
+import com.praxello.smartdoctor.model.getallcomplaints.GetAllComplaintsResponse;
+import com.praxello.smartdoctor.model.getalldiagnosis.AllDiagnosisResponse;
 import com.praxello.smartdoctor.model.login.LoginResponse;
 import com.praxello.smartdoctor.model.medicinetype.MedicineTypeResponse;
 
@@ -100,6 +102,11 @@ public class ApiRequestHelper {
         call_api_upload_prescription_request(onRequestComplete, call);
     }
 
+    public void printPrescription(Map<String, String> params, final OnRequestComplete onRequestComplete) {
+        Call<CommonResponse> call = SmartQuizServices.printPrescription(params);
+        call_api_add_leave_request(onRequestComplete, call);
+    }
+
     public void getAllMedicine( final OnRequestComplete onRequestComplete) {
         Call<MedicineResponse> call = SmartQuizServices.getAllMedicine();
         call_api_medicine(onRequestComplete, call);
@@ -119,6 +126,61 @@ public class ApiRequestHelper {
         Call<InstructionResponse> call = SmartQuizServices.getAllInstruction();
         call_api_instruction(onRequestComplete, call);
     }
+
+    public void getAllComplaints( final OnRequestComplete onRequestComplete) {
+        Call<GetAllComplaintsResponse> call = SmartQuizServices.getAllComplaints();
+        call_api_complaints(onRequestComplete, call);
+    }
+
+    public void getAllDiagnosis( final OnRequestComplete onRequestComplete) {
+        Call<AllDiagnosisResponse> call = SmartQuizServices.getAllDiagnosis();
+        call_api_diagnosis(onRequestComplete, call);
+    }
+
+    private void call_api_diagnosis(final OnRequestComplete onRequestComplete, Call<AllDiagnosisResponse> call) {
+        call.enqueue(new Callback<AllDiagnosisResponse>() {
+            @Override
+            public void onResponse(Call<AllDiagnosisResponse> call, Response<AllDiagnosisResponse> response) {
+                if (response.isSuccessful()) {
+                    onRequestComplete.onSuccess(response.body());
+                } else {
+                    try {
+                        onRequestComplete.onFailure(Html.fromHtml(response.errorBody().string()) + "");
+                    } catch (IOException e) {
+                        onRequestComplete.onFailure("Unproper Response");
+                        e.printStackTrace();
+                    }
+                }
+            }
+            @Override
+            public void onFailure(Call<AllDiagnosisResponse> call, Throwable t) {
+                handle_fail_response(t, onRequestComplete);
+            }
+        });
+    }
+
+    private void call_api_complaints(final OnRequestComplete onRequestComplete, Call<GetAllComplaintsResponse> call) {
+        call.enqueue(new Callback<GetAllComplaintsResponse>() {
+            @Override
+            public void onResponse(Call<GetAllComplaintsResponse> call, Response<GetAllComplaintsResponse> response) {
+                if (response.isSuccessful()) {
+                    onRequestComplete.onSuccess(response.body());
+                } else {
+                    try {
+                        onRequestComplete.onFailure(Html.fromHtml(response.errorBody().string()) + "");
+                    } catch (IOException e) {
+                        onRequestComplete.onFailure("Unproper Response");
+                        e.printStackTrace();
+                    }
+                }
+            }
+            @Override
+            public void onFailure(Call<GetAllComplaintsResponse> call, Throwable t) {
+                handle_fail_response(t, onRequestComplete);
+            }
+        });
+    }
+
 
     private void call_api_upload_prescription_request(final OnRequestComplete onRequestComplete, Call<UploadPrescriptionResponse> call) {
         call.enqueue(new Callback<UploadPrescriptionResponse>() {

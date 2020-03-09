@@ -9,8 +9,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.app.DatePickerDialog;
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -31,10 +33,12 @@ import com.praxello.smartdoctor.CommonMethods;
 import com.praxello.smartdoctor.R;
 import com.praxello.smartdoctor.adapter.AddPrescriptionsAdapter;
 import com.praxello.smartdoctor.adapter.autotextadapters.AllMedicineAdapter;
+import com.praxello.smartdoctor.adapter.autotextadapters.DiagnosisAdapter;
 import com.praxello.smartdoctor.adapter.autotextadapters.DosageAdapter;
+import com.praxello.smartdoctor.adapter.autotextadapters.GetAllComplaintsAdapter;
 import com.praxello.smartdoctor.adapter.autotextadapters.InstructionAdapter;
 import com.praxello.smartdoctor.adapter.autotextadapters.TypeAdapter;
-import com.praxello.smartdoctor.model.AddPrescriptionData;
+import com.praxello.smartdoctor.model.AddMedicines;
 import com.praxello.smartdoctor.model.PostData;
 import com.praxello.smartdoctor.model.UploadPrescriptionResponse;
 import com.praxello.smartdoctor.model.alldosage.DosageData;
@@ -43,8 +47,8 @@ import com.praxello.smartdoctor.model.allinstruction.InstructionData;
 import com.praxello.smartdoctor.model.allinstruction.InstructionResponse;
 import com.praxello.smartdoctor.model.allmedicine.MedicineData;
 import com.praxello.smartdoctor.model.allmedicine.MedicineResponse;
-import com.praxello.smartdoctor.model.allpatient.AddPatientResponse;
-import com.praxello.smartdoctor.model.allpatient.AllPatientData;
+import com.praxello.smartdoctor.model.getallcomplaints.GetAllComplaintsResponse;
+import com.praxello.smartdoctor.model.getalldiagnosis.AllDiagnosisResponse;
 import com.praxello.smartdoctor.model.medicinetype.MedicineType;
 import com.praxello.smartdoctor.model.medicinetype.MedicineTypeResponse;
 import com.praxello.smartdoctor.services.ApiRequestHelper;
@@ -77,10 +81,10 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
     public RecyclerView rvNewPrescription;
     @BindView(R.id.btn_add_prescription)
     public AppCompatButton btnAddPrescription;
-    @BindView(R.id.et_complaints)
-    public EditText etComplaints;
-    @BindView(R.id.et_diagnosis)
-    public EditText etDiagnosis;
+    @BindView(R.id.act_complaints)
+    public AutoCompleteTextView etComplaints;
+    @BindView(R.id.act_diagnosis)
+    public AutoCompleteTextView etDiagnosis;
     @BindView(R.id.et_advice)
     public EditText etAdvice;
     @BindView(R.id.et_nextvisitdate)
@@ -90,10 +94,10 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
     ArrayList<DosageData> dosageDataArrayList=new ArrayList<>();
     ArrayList<InstructionData> instructionDataArrayList=new ArrayList<>();
     private static String TAG="RxActivity";
-    ArrayList<AddPrescriptionData> addPrescriptionDataArrayList =new ArrayList<>();
+    ArrayList<AddMedicines> addMedicinesArrayList =new ArrayList<>();
     AddPrescriptionsAdapter addPrescriptionsAdapter;
     static String type="add";
-    private int mYear, mMonth, mDay,position;
+    private int mYear, mMonth, mDay;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -116,6 +120,12 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
 
         //load all Instruction...
         loadAllInstruction();
+
+        //load all Complaints
+        loadAllComplaints();
+
+        //load all diagnosis...
+        loadAllDiagnosis();
 
         actMedicine.addTextChangedListener(new TextWatcher() {
             @Override
@@ -196,7 +206,7 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
                 break;
 
             case R.id.btn_add_prescription:
-                String data=new Gson().toJson(addPrescriptionDataArrayList);
+                String data=new Gson().toJson(addMedicinesArrayList);
                 uploadPrescription();
                 break;
 
@@ -225,7 +235,7 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
     }
 
     private void addPrescriptions(String type,int position){
-        AddPrescriptionData addPrescriptionData =new AddPrescriptionData(actType.getText().toString(),
+        AddMedicines addMedicines =new AddMedicines(actType.getText().toString(),
                 actMedicine.getText().toString(),
                 actMorning.getText().toString(),
                 actEvening.getText().toString(),
@@ -234,11 +244,11 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
                 actNotesInstruction.getText().toString());
 
         if(type.equals("add")){
-            addPrescriptionDataArrayList.add(addPrescriptionData);
-             addPrescriptionsAdapter=new AddPrescriptionsAdapter(RxActivity.this, addPrescriptionDataArrayList);
+            addMedicinesArrayList.add(addMedicines);
+             addPrescriptionsAdapter=new AddPrescriptionsAdapter(RxActivity.this, addMedicinesArrayList);
              rvNewPrescription.setAdapter(addPrescriptionsAdapter);
         }else if(type.equals("update")){
-            addPrescriptionDataArrayList.set(position, addPrescriptionData);
+            addMedicinesArrayList.set(position, addMedicines);
             addPrescriptionsAdapter.notifyItemChanged(position);
             btnAdd.setText("Add");
             RxActivity.type="add";
@@ -249,9 +259,8 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
 
     private void uploadPrescription(){
         String data1="";
-        String data=new Gson().toJson(addPrescriptionDataArrayList);
-        JsonArray citiesArray = new JsonArray();
-        for(AddPrescriptionData da : addPrescriptionDataArrayList)
+        JsonArray medicinesDetails = new JsonArray();
+        for(AddMedicines da : addMedicinesArrayList)
         {
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty("typeId",da.getTypeId());
@@ -262,10 +271,10 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
             jsonObject.addProperty("duration",da.getDuration());
             jsonObject.addProperty("inst",da.getInst());
 
-            citiesArray.add(jsonObject);
+            medicinesDetails.add(jsonObject);
         }
-        // data = data.replaceAll("\\\\", "");
-        PostData postdata=new PostData(citiesArray,
+
+        PostData postdata=new PostData(medicinesDetails,
                 "14",
                 CommonMethods.getPrefrence(RxActivity.this,AllKeys.USER_ID),
                 etNextVisitDate.getText().toString(),
@@ -309,6 +318,16 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
 
                 if(uploadPrescriptionResponse.getResponsecode()==200){
                     Toast.makeText(RxActivity.this, uploadPrescriptionResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                    String url = "http://192.168.0.105/Aloha/p.php?pflag=1 && ppatientId="+uploadPrescriptionResponse.getPatientId()+"&&  pdoctorId="+uploadPrescriptionResponse.getDoctorId()+"&& pvisitDate="+uploadPrescriptionResponse.getVdate();
+
+                    //Print pdf...
+                    Intent intent = new Intent(RxActivity.this,WebViewActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    intent.putExtra("url",url);
+                    startActivity(intent);
+                    overridePendingTransition(R.anim.activity_open_translate, R.anim.activity_close_scale);
+
+                    //printPrescription(uploadPrescriptionResponse.getPatientId(),uploadPrescriptionResponse.getDoctorId(),uploadPrescriptionResponse.getVdate());
                 }else{
                     Toast.makeText(RxActivity.this, uploadPrescriptionResponse.getMessage(), Toast.LENGTH_SHORT).show();
                 }
@@ -321,14 +340,14 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
         });
     }
 
-    public void updatePrescription(AddPrescriptionData addPrescriptionData, int position){
-        actMedicine.setText(addPrescriptionData.getMedicineId());
-        actType.setText(addPrescriptionData.getTypeId());
-        actMorning.setText(addPrescriptionData.getMorning());
-        actEvening.setText(addPrescriptionData.getEvining());
-        actNight.setText(addPrescriptionData.getNight());
-        actNotesInstruction.setText(addPrescriptionData.getInst());
-        actDuration.setText(addPrescriptionData.getDuration());
+    public void updatePrescription(AddMedicines addMedicines, int position){
+        actMedicine.setText(addMedicines.getMedicineId());
+        actType.setText(addMedicines.getTypeId());
+        actMorning.setText(addMedicines.getMorning());
+        actEvening.setText(addMedicines.getEvining());
+        actNight.setText(addMedicines.getNight());
+        actNotesInstruction.setText(addMedicines.getInst());
+        actDuration.setText(addMedicines.getDuration());
 
         btnAdd.setText("Update");
         RxActivity.type="update";
@@ -362,6 +381,76 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
 
                 }else{
                     Toast.makeText(RxActivity.this, medicineTypeResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            }
+            @Override
+            public void onFailure(String apiResponse) {
+                progress.dismiss();
+                Toast.makeText(RxActivity.this, apiResponse, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void loadAllComplaints(){
+        final ProgressDialog progress = new ProgressDialog(RxActivity.this);
+        progress.setMessage("Please wait...");
+        progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progress.show();
+        progress.setCancelable(false);
+
+        smartQuiz.getApiRequestHelper().getAllComplaints(new ApiRequestHelper.OnRequestComplete() {
+            @Override
+            public void onSuccess(Object object) {
+                GetAllComplaintsResponse getAllComplaintsResponse=(GetAllComplaintsResponse) object;
+
+                Log.e(TAG, "onSuccess: "+getAllComplaintsResponse.getResponsecode());
+                Log.e(TAG, "onSuccess: "+getAllComplaintsResponse.getMessage());
+                progress.dismiss();
+                if(getAllComplaintsResponse.getResponsecode()==200){
+                    //Toast.makeText(RxActivity.this, medicineTypeResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                    if(getAllComplaintsResponse.getData()!=null){
+                        GetAllComplaintsAdapter getAllComplaintsAdapter=new GetAllComplaintsAdapter(RxActivity.this,R.layout.layout_autocomplete_row,getAllComplaintsResponse.getData());
+                        etComplaints.setAdapter(getAllComplaintsAdapter);
+                        etComplaints.setThreshold(1);
+                    }
+
+                }else{
+                    Toast.makeText(RxActivity.this, getAllComplaintsResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            }
+            @Override
+            public void onFailure(String apiResponse) {
+                progress.dismiss();
+                Toast.makeText(RxActivity.this, apiResponse, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void loadAllDiagnosis(){
+        final ProgressDialog progress = new ProgressDialog(RxActivity.this);
+        progress.setMessage("Please wait...");
+        progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progress.show();
+        progress.setCancelable(false);
+
+        smartQuiz.getApiRequestHelper().getAllDiagnosis(new ApiRequestHelper.OnRequestComplete() {
+            @Override
+            public void onSuccess(Object object) {
+                AllDiagnosisResponse allDiagnosisResponse=(AllDiagnosisResponse) object;
+
+                Log.e(TAG, "onSuccess: "+allDiagnosisResponse.getResponsecode());
+                Log.e(TAG, "onSuccess: "+allDiagnosisResponse.getMessage());
+                progress.dismiss();
+                if(allDiagnosisResponse.getResponsecode()==200){
+                    //Toast.makeText(RxActivity.this, medicineTypeResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                    if(allDiagnosisResponse.getData()!=null){
+                        DiagnosisAdapter diagnosisAdapter=new DiagnosisAdapter(RxActivity.this,R.layout.layout_autocomplete_row,allDiagnosisResponse.getData());
+                        etDiagnosis.setAdapter(diagnosisAdapter);
+                        etDiagnosis.setThreshold(1);
+                    }
+
+                }else{
+                    Toast.makeText(RxActivity.this, allDiagnosisResponse.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
             @Override

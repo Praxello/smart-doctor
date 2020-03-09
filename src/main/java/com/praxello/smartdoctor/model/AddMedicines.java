@@ -1,6 +1,6 @@
 package com.praxello.smartdoctor.model;
 
-public class AddPrescriptionData {
+public class AddMedicines {
 
     private String typeId;
     private String medicineId;
@@ -10,7 +10,7 @@ public class AddPrescriptionData {
     private String duration;
     private String inst;
 
-    public AddPrescriptionData(String typeId, String medicineId, String morning, String evining, String night, String duration, String inst) {
+    public AddMedicines(String typeId, String medicineId, String morning, String evining, String night, String duration, String inst) {
         this.typeId = typeId;
         this.medicineId = medicineId;
         this.morning = morning;

@@ -7,6 +7,8 @@ import com.praxello.smartdoctor.model.allinstruction.InstructionResponse;
 import com.praxello.smartdoctor.model.allmedicine.MedicineResponse;
 import com.praxello.smartdoctor.model.allpatient.AddPatientResponse;
 import com.praxello.smartdoctor.model.allpatient.PatientResponse;
+import com.praxello.smartdoctor.model.getallcomplaints.GetAllComplaintsResponse;
+import com.praxello.smartdoctor.model.getalldiagnosis.AllDiagnosisResponse;
 import com.praxello.smartdoctor.model.login.LoginResponse;
 import com.praxello.smartdoctor.model.medicinetype.MedicineTypeResponse;
 
@@ -28,7 +30,6 @@ public interface SmartQuizServices {
     @FormUrlEncoded
     @POST("~tailor/smartquiz/smartdoctor/getpatientdata.php")
     Call<PatientResponse> getallpatient( @Field("doctorId") String doctorId);
-
 
     @FormUrlEncoded
     @POST("~tailor/smartquiz/smartdoctor/deletepatient.php")
@@ -58,8 +59,20 @@ public interface SmartQuizServices {
     @GET("/Aloha/apis/getAllInstruction.php")
     Call<InstructionResponse> getAllInstruction();
 
+    @GET("/Aloha/apis/getAllcomplaints.php")
+    Call<GetAllComplaintsResponse> getAllComplaints();
+
+    @GET("/Aloha/apis/getAllDiagnosis.php")
+    Call<AllDiagnosisResponse> getAllDiagnosis();
+
+
+
     @FormUrlEncoded
     @POST("/Aloha/apis/addPrescription.php")
     Call<UploadPrescriptionResponse> uploadPrescription(@FieldMap Map<String, String> params);
+
+    @FormUrlEncoded
+    @POST("/Aloha/prescription-print.php")
+    Call<CommonResponse> printPrescription(@FieldMap Map<String, String> params);
 
 }
