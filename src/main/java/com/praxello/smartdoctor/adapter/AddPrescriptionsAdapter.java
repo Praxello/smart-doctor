@@ -1,6 +1,5 @@
 package com.praxello.smartdoctor.adapter;
 
-import android.app.Activity;
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,7 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.praxello.smartdoctor.R;
 import com.praxello.smartdoctor.activity.RxActivity;
-import com.praxello.smartdoctor.model.AddPrescription;
+import com.praxello.smartdoctor.model.AddPrescriptionData;
 
 import java.util.ArrayList;
 
@@ -21,11 +20,11 @@ import butterknife.ButterKnife;
 public class AddPrescriptionsAdapter extends RecyclerView.Adapter<AddPrescriptionsAdapter.AddPrescriptionsViewHolder> {
 
     Context context;
-    ArrayList<AddPrescription> addPrescriptionArrayList;
+    ArrayList<AddPrescriptionData> addPrescriptionDataArrayList;
 
-    public AddPrescriptionsAdapter(Context context, ArrayList<AddPrescription> addPrescriptionArrayList) {
+    public AddPrescriptionsAdapter(Context context, ArrayList<AddPrescriptionData> addPrescriptionDataArrayList) {
         this.context = context;
-        this.addPrescriptionArrayList = addPrescriptionArrayList;
+        this.addPrescriptionDataArrayList = addPrescriptionDataArrayList;
     }
 
 
@@ -39,25 +38,25 @@ public class AddPrescriptionsAdapter extends RecyclerView.Adapter<AddPrescriptio
 
     @Override
     public void onBindViewHolder(@NonNull AddPrescriptionsViewHolder holder, int position) {
-        holder.tvMedicineName.setText(addPrescriptionArrayList.get(position).getTypeId()+". "+addPrescriptionArrayList.get(position).getMedicineId());
-        holder.tvMorning.setText(addPrescriptionArrayList.get(position).getMorning()+"-"+addPrescriptionArrayList.get(position).getEvining()+"-"+addPrescriptionArrayList.get(position).getNight());
-        holder.tvDuration.setText(addPrescriptionArrayList.get(position).getDuration()+" days");
-        holder.tvInstruction.setText(addPrescriptionArrayList.get(position).getInst());
+        holder.tvMedicineName.setText(addPrescriptionDataArrayList.get(position).getTypeId()+". "+ addPrescriptionDataArrayList.get(position).getMedicineId());
+        holder.tvMorning.setText(addPrescriptionDataArrayList.get(position).getMorning()+"-"+ addPrescriptionDataArrayList.get(position).getEvining()+"-"+ addPrescriptionDataArrayList.get(position).getNight());
+        holder.tvDuration.setText(addPrescriptionDataArrayList.get(position).getDuration()+" days");
+        holder.tvInstruction.setText(addPrescriptionDataArrayList.get(position).getInst());
 
         holder.ivEdit.setOnClickListener(v -> {
-            ((RxActivity) context).updatePrescription(addPrescriptionArrayList.get(position),position);
+            ((RxActivity) context).updatePrescription(addPrescriptionDataArrayList.get(position),position);
         });
 
         holder.ivDelete.setOnClickListener(v -> {
-            addPrescriptionArrayList.remove(position);
+            addPrescriptionDataArrayList.remove(position);
             notifyItemRemoved(position);
-            notifyItemRangeChanged(position,addPrescriptionArrayList.size());
+            notifyItemRangeChanged(position, addPrescriptionDataArrayList.size());
         });
     }
 
     @Override
     public int getItemCount() {
-        return addPrescriptionArrayList.size();
+        return addPrescriptionDataArrayList.size();
     }
 
     public class AddPrescriptionsViewHolder extends RecyclerView.ViewHolder{

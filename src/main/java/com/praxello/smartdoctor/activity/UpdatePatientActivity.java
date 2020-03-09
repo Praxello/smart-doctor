@@ -164,7 +164,7 @@ public class UpdatePatientActivity extends AppCompatActivity implements View.OnC
         progress.show();
         progress.setCancelable(false);
 
-        AllPatientsActivity.smartQuiz.getApiRequestHelper().updatePatient(params,new ApiRequestHelper.OnRequestComplete() {
+        smartQuiz.getApiRequestHelper().updatePatient(params,new ApiRequestHelper.OnRequestComplete() {
             @Override
             public void onSuccess(Object object) {
                 AddPatientResponse addPatientResponse=(AddPatientResponse) object;

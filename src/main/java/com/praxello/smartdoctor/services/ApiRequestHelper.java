@@ -12,6 +12,7 @@ import com.google.gson.stream.JsonWriter;
 import com.praxello.smartdoctor.AllKeys;
 import com.praxello.smartdoctor.ConfigUrl;
 import com.praxello.smartdoctor.model.CommonResponse;
+import com.praxello.smartdoctor.model.UploadPrescriptionResponse;
 import com.praxello.smartdoctor.model.alldosage.DosageResponse;
 import com.praxello.smartdoctor.model.allinstruction.InstructionResponse;
 import com.praxello.smartdoctor.model.allmedicine.MedicineResponse;
@@ -94,6 +95,11 @@ public class ApiRequestHelper {
         call_api_add_patient_request(onRequestComplete, call);
     }
 
+    public void uploadPrescription(Map<String, String> params, final OnRequestComplete onRequestComplete) {
+        Call<UploadPrescriptionResponse> call = SmartQuizServices.uploadPrescription(params);
+        call_api_upload_prescription_request(onRequestComplete, call);
+    }
+
     public void getAllMedicine( final OnRequestComplete onRequestComplete) {
         Call<MedicineResponse> call = SmartQuizServices.getAllMedicine();
         call_api_medicine(onRequestComplete, call);
@@ -112,6 +118,28 @@ public class ApiRequestHelper {
     public void getAllInstruction( final OnRequestComplete onRequestComplete) {
         Call<InstructionResponse> call = SmartQuizServices.getAllInstruction();
         call_api_instruction(onRequestComplete, call);
+    }
+
+    private void call_api_upload_prescription_request(final OnRequestComplete onRequestComplete, Call<UploadPrescriptionResponse> call) {
+        call.enqueue(new Callback<UploadPrescriptionResponse>() {
+            @Override
+            public void onResponse(Call<UploadPrescriptionResponse> call, Response<UploadPrescriptionResponse> response) {
+                if (response.isSuccessful()) {
+                    onRequestComplete.onSuccess(response.body());
+                } else {
+                    try {
+                        onRequestComplete.onFailure(Html.fromHtml(response.errorBody().string()) + "");
+                    } catch (IOException e) {
+                        onRequestComplete.onFailure("Unproper Response");
+                        e.printStackTrace();
+                    }
+                }
+            }
+            @Override
+            public void onFailure(Call<UploadPrescriptionResponse> call, Throwable t) {
+                handle_fail_response(t, onRequestComplete);
+            }
+        });
     }
 
     private void call_api_instruction(final OnRequestComplete onRequestComplete, Call<InstructionResponse> call) {

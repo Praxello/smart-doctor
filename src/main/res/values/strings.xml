@@ -32,4 +32,8 @@
     <string name="new_prescription">New Prescription</string>
     <string name="old_prescription">Old Prescription</string>
     <string name="submit">Submit</string>
+    <string name="complaints">Complaints</string>
+    <string name="advice">Advice</string>
+    <string name="diagnosis">Diagnosis</string>
+    <string name="next_visit">Next Visit</string>
 </resources>

@@ -1,11 +1,13 @@
 package com.praxello.smartdoctor.activity;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.DatePickerDialog;
 import android.app.ProgressDialog;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
@@ -13,18 +15,28 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AutoCompleteTextView;
+import android.widget.DatePicker;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
+import com.praxello.smartdoctor.AllKeys;
+import com.praxello.smartdoctor.CommonMethods;
 import com.praxello.smartdoctor.R;
 import com.praxello.smartdoctor.adapter.AddPrescriptionsAdapter;
 import com.praxello.smartdoctor.adapter.autotextadapters.AllMedicineAdapter;
 import com.praxello.smartdoctor.adapter.autotextadapters.DosageAdapter;
 import com.praxello.smartdoctor.adapter.autotextadapters.InstructionAdapter;
 import com.praxello.smartdoctor.adapter.autotextadapters.TypeAdapter;
-import com.praxello.smartdoctor.model.AddPrescription;
+import com.praxello.smartdoctor.model.AddPrescriptionData;
+import com.praxello.smartdoctor.model.PostData;
+import com.praxello.smartdoctor.model.UploadPrescriptionResponse;
 import com.praxello.smartdoctor.model.alldosage.DosageData;
 import com.praxello.smartdoctor.model.alldosage.DosageResponse;
 import com.praxello.smartdoctor.model.allinstruction.InstructionData;
@@ -36,14 +48,19 @@ import com.praxello.smartdoctor.model.allpatient.AllPatientData;
 import com.praxello.smartdoctor.model.medicinetype.MedicineType;
 import com.praxello.smartdoctor.model.medicinetype.MedicineTypeResponse;
 import com.praxello.smartdoctor.services.ApiRequestHelper;
+import com.praxello.smartdoctor.services.SmartQuiz;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class RxActivity extends AppCompatActivity implements View.OnClickListener {
 
+    public SmartQuiz smartQuiz;
     public static AutoCompleteTextView actType;
     public static AutoCompleteTextView actMedicine;
     public static AutoCompleteTextView actMorning;
@@ -60,20 +77,30 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
     public RecyclerView rvNewPrescription;
     @BindView(R.id.btn_add_prescription)
     public AppCompatButton btnAddPrescription;
+    @BindView(R.id.et_complaints)
+    public EditText etComplaints;
+    @BindView(R.id.et_diagnosis)
+    public EditText etDiagnosis;
+    @BindView(R.id.et_advice)
+    public EditText etAdvice;
+    @BindView(R.id.et_nextvisitdate)
+    public EditText etNextVisitDate;
     ArrayList<MedicineType> medicineTypeArrayList=new ArrayList<>();
     ArrayList<MedicineData> medicineDataArrayList=new ArrayList<>();
     ArrayList<DosageData> dosageDataArrayList=new ArrayList<>();
     ArrayList<InstructionData> instructionDataArrayList=new ArrayList<>();
     private static String TAG="RxActivity";
-    ArrayList<AddPrescription> addPrescriptionArrayList=new ArrayList<>();
+    ArrayList<AddPrescriptionData> addPrescriptionDataArrayList =new ArrayList<>();
     AddPrescriptionsAdapter addPrescriptionsAdapter;
     static String type="add";
+    private int mYear, mMonth, mDay,position;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_rx);
         ButterKnife.bind(this);
+        smartQuiz = (SmartQuiz) getApplication();
 
         //basic intialisation...
         initViews();
@@ -137,9 +164,16 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
         btnAdd.setOnClickListener(this);
         btnClear.setOnClickListener(this);
         btnAddPrescription.setOnClickListener(this);
+        etNextVisitDate.setOnClickListener(this);
 
         //Recycler view layout setting....
-        rvNewPrescription.setLayoutManager(new LinearLayoutManager(this));
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this) {
+            @Override
+            public boolean canScrollVertically() {
+                return false;
+            }
+        };
+        rvNewPrescription.setLayoutManager(linearLayoutManager);
     }
 
     @Override
@@ -162,14 +196,36 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
                 break;
 
             case R.id.btn_add_prescription:
-                String data=new Gson().toJson(addPrescriptionArrayList);
-                Toast.makeText(this, "data\n"+data, Toast.LENGTH_SHORT).show();
+                String data=new Gson().toJson(addPrescriptionDataArrayList);
+                uploadPrescription();
+                break;
+
+            case R.id.et_nextvisitdate:
+                // Get Current Date
+                final Calendar c = Calendar.getInstance();
+                mYear = c.get(Calendar.YEAR);
+                mMonth = c.get(Calendar.MONTH);
+                mDay = c.get(Calendar.DAY_OF_MONTH);
+
+                DatePickerDialog datePickerDialog = new DatePickerDialog(this,
+                        new DatePickerDialog.OnDateSetListener() {
+
+                            @Override
+                            public void onDateSet(DatePicker view, int year,
+                                                  int monthOfYear, int dayOfMonth) {
+
+                                etNextVisitDate.setText(year + "-" + (monthOfYear + 1) + "-" + dayOfMonth);
+
+                            }
+                        }, mYear, mMonth, mDay);
+                // datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis() - 1000);
+                datePickerDialog.show();
                 break;
         }
     }
 
     private void addPrescriptions(String type,int position){
-        AddPrescription addPrescription=new AddPrescription(actType.getText().toString(),
+        AddPrescriptionData addPrescriptionData =new AddPrescriptionData(actType.getText().toString(),
                 actMedicine.getText().toString(),
                 actMorning.getText().toString(),
                 actEvening.getText().toString(),
@@ -178,11 +234,11 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
                 actNotesInstruction.getText().toString());
 
         if(type.equals("add")){
-            addPrescriptionArrayList.add(addPrescription);
-             addPrescriptionsAdapter=new AddPrescriptionsAdapter(RxActivity.this,addPrescriptionArrayList);
+            addPrescriptionDataArrayList.add(addPrescriptionData);
+             addPrescriptionsAdapter=new AddPrescriptionsAdapter(RxActivity.this, addPrescriptionDataArrayList);
              rvNewPrescription.setAdapter(addPrescriptionsAdapter);
         }else if(type.equals("update")){
-            addPrescriptionArrayList.set(position,addPrescription);
+            addPrescriptionDataArrayList.set(position, addPrescriptionData);
             addPrescriptionsAdapter.notifyItemChanged(position);
             btnAdd.setText("Add");
             RxActivity.type="add";
@@ -191,14 +247,88 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
         clearAllFields();
     }
 
-    public void updatePrescription(AddPrescription addPrescription,int position){
-        actMedicine.setText(addPrescription.getMedicineId());
-        actType.setText(addPrescription.getTypeId());
-        actMorning.setText(addPrescription.getMorning());
-        actEvening.setText(addPrescription.getEvining());
-        actNight.setText(addPrescription.getNight());
-        actNotesInstruction.setText(addPrescription.getInst());
-        actDuration.setText(addPrescription.getDuration());
+    private void uploadPrescription(){
+        String data1="";
+        String data=new Gson().toJson(addPrescriptionDataArrayList);
+        JsonArray citiesArray = new JsonArray();
+        for(AddPrescriptionData da : addPrescriptionDataArrayList)
+        {
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty("typeId",da.getTypeId());
+            jsonObject.addProperty("medicineId",da.getMedicineId());
+            jsonObject.addProperty("morning",da.getMorning());
+            jsonObject.addProperty("evining",da.getEvining());
+            jsonObject.addProperty("night",da.getNight());
+            jsonObject.addProperty("duration",da.getDuration());
+            jsonObject.addProperty("inst",da.getInst());
+
+            citiesArray.add(jsonObject);
+        }
+        // data = data.replaceAll("\\\\", "");
+        PostData postdata=new PostData(citiesArray,
+                "14",
+                CommonMethods.getPrefrence(RxActivity.this,AllKeys.USER_ID),
+                etNextVisitDate.getText().toString(),
+                "2020-03-06",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                etComplaints.getText().toString(),
+                etDiagnosis.getText().toString(),
+                etAdvice.getText().toString());
+        try{
+            data1=new Gson().toJson(postdata,PostData.class);
+            Log.e(TAG, "uploadPrescription: "+data1 );
+
+        }catch (IllegalStateException | JsonSyntaxException e){
+            e.printStackTrace();
+        }
+
+        Map<String,String> params=new HashMap<>();
+        params.put("postdata",data1);
+        final ProgressDialog progress = new ProgressDialog(RxActivity.this);
+        progress.setMessage("Please wait...");
+        progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progress.show();
+        progress.setCancelable(false);
+
+        smartQuiz.getApiRequestHelper().uploadPrescription(params,new ApiRequestHelper.OnRequestComplete() {
+            @Override
+            public void onSuccess(Object object) {
+                UploadPrescriptionResponse uploadPrescriptionResponse=(UploadPrescriptionResponse) object;
+
+                Log.e(TAG, "onSuccess: "+uploadPrescriptionResponse.getResponsecode());
+                Log.e(TAG, "onSuccess: "+uploadPrescriptionResponse.getMessage());
+
+                progress.dismiss();
+
+                if(uploadPrescriptionResponse.getResponsecode()==200){
+                    Toast.makeText(RxActivity.this, uploadPrescriptionResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                }else{
+                    Toast.makeText(RxActivity.this, uploadPrescriptionResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            }
+            @Override
+            public void onFailure(String apiResponse) {
+                progress.dismiss();
+                Toast.makeText(RxActivity.this, apiResponse, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    public void updatePrescription(AddPrescriptionData addPrescriptionData, int position){
+        actMedicine.setText(addPrescriptionData.getMedicineId());
+        actType.setText(addPrescriptionData.getTypeId());
+        actMorning.setText(addPrescriptionData.getMorning());
+        actEvening.setText(addPrescriptionData.getEvining());
+        actNight.setText(addPrescriptionData.getNight());
+        actNotesInstruction.setText(addPrescriptionData.getInst());
+        actDuration.setText(addPrescriptionData.getDuration());
 
         btnAdd.setText("Update");
         RxActivity.type="update";
@@ -213,7 +343,7 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
         progress.show();
         progress.setCancelable(false);
 
-        AllPatientsActivity.smartQuiz.getApiRequestHelper().getAllMedicineType(new ApiRequestHelper.OnRequestComplete() {
+       smartQuiz.getApiRequestHelper().getAllMedicineType(new ApiRequestHelper.OnRequestComplete() {
             @Override
             public void onSuccess(Object object) {
                 MedicineTypeResponse medicineTypeResponse=(MedicineTypeResponse) object;
@@ -249,7 +379,7 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
         progress.show();
         progress.setCancelable(false);
 
-        AllPatientsActivity.smartQuiz.getApiRequestHelper().getAllMedicine(new ApiRequestHelper.OnRequestComplete() {
+       smartQuiz.getApiRequestHelper().getAllMedicine(new ApiRequestHelper.OnRequestComplete() {
             @Override
             public void onSuccess(Object object) {
                 MedicineResponse medicineResponse=(MedicineResponse) object;
@@ -291,7 +421,7 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
         progress.show();
         progress.setCancelable(false);
 
-        AllPatientsActivity.smartQuiz.getApiRequestHelper().getAllDosage(new ApiRequestHelper.OnRequestComplete() {
+        smartQuiz.getApiRequestHelper().getAllDosage(new ApiRequestHelper.OnRequestComplete() {
             @Override
             public void onSuccess(Object object) {
                 DosageResponse dosageResponse=(DosageResponse) object;
@@ -331,7 +461,7 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
         progress.show();
         progress.setCancelable(false);
 
-        AllPatientsActivity.smartQuiz.getApiRequestHelper().getAllInstruction(new ApiRequestHelper.OnRequestComplete() {
+        smartQuiz.getApiRequestHelper().getAllInstruction(new ApiRequestHelper.OnRequestComplete() {
             @Override
             public void onSuccess(Object object) {
                 InstructionResponse instructionResponse=(InstructionResponse) object;
@@ -410,5 +540,20 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
         return true;
     }
 
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()){
+            case android.R.id.home:
+                finish();
+                overridePendingTransition(R.anim.activity_open_translate, R.anim.activity_close_scale);
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        overridePendingTransition(R.anim.activity_open_translate, R.anim.activity_close_scale);
+    }
 }

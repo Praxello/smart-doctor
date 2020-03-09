@@ -16,6 +16,8 @@ public class DashBoardActivity extends AppCompatActivity implements View.OnClick
 
     @BindView(R.id.ll_allpatients)
     LinearLayout llAllPatients;
+    @BindView(R.id.ll_collections)
+    LinearLayout llCollections;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,6 +26,7 @@ public class DashBoardActivity extends AppCompatActivity implements View.OnClick
         ButterKnife.bind(this);
 
         llAllPatients.setOnClickListener(this);
+        llCollections.setOnClickListener(this);
     }
 
     @Override
@@ -31,6 +34,13 @@ public class DashBoardActivity extends AppCompatActivity implements View.OnClick
         switch (v.getId()){
             case R.id.ll_allpatients:
                 Intent intent = new Intent(DashBoardActivity.this,AllPatientsActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                startActivity(intent);
+                overridePendingTransition(R.anim.activity_open_translate, R.anim.activity_close_scale);
+                break;
+
+            case R.id.ll_collections:
+                intent = new Intent(DashBoardActivity.this,RxActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 startActivity(intent);
                 overridePendingTransition(R.anim.activity_open_translate, R.anim.activity_close_scale);

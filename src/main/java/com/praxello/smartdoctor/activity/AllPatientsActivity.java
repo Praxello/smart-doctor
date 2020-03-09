@@ -112,23 +112,6 @@ public class AllPatientsActivity extends AppCompatActivity implements View.OnCli
                 });
     }
 
-            @Override
-            public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-                switch (item.getItemId()){
-                    case android.R.id.home:
-                        finish();
-                        overridePendingTransition(R.anim.activity_open_translate, R.anim.activity_close_scale);
-                        break;
-                }
-                return super.onOptionsItemSelected(item);
-            }
-
-            @Override
-            public void onBackPressed() {
-                super.onBackPressed();
-                overridePendingTransition(R.anim.activity_open_translate, R.anim.activity_close_scale);
-            }
-
     @Override
     public void onClick(View v) {
         switch (v.getId()){
@@ -139,5 +122,22 @@ public class AllPatientsActivity extends AppCompatActivity implements View.OnCli
                 overridePendingTransition(R.anim.bottom_up, R.anim.bottom_down);
                 break;
         }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()){
+            case android.R.id.home:
+                finish();
+                overridePendingTransition(R.anim.activity_open_translate, R.anim.activity_close_scale);
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        overridePendingTransition(R.anim.activity_open_translate, R.anim.activity_close_scale);
     }
 }

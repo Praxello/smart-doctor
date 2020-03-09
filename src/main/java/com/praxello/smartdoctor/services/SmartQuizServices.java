@@ -1,6 +1,7 @@
 package com.praxello.smartdoctor.services;
 
 import com.praxello.smartdoctor.model.CommonResponse;
+import com.praxello.smartdoctor.model.UploadPrescriptionResponse;
 import com.praxello.smartdoctor.model.alldosage.DosageResponse;
 import com.praxello.smartdoctor.model.allinstruction.InstructionResponse;
 import com.praxello.smartdoctor.model.allmedicine.MedicineResponse;
@@ -41,15 +42,24 @@ public interface SmartQuizServices {
     @POST("~tailor/smartquiz/smartdoctor/updatepatient.php")
     Call<AddPatientResponse> updatePatient(@FieldMap Map<String, String> params);
 
-    @GET("~tailor/Spine360/apis/getAllMedicines.php")
+   // @GET("~tailor/Spine360/apis/getAllMedicines.php")
+    @GET("/Aloha/apis/getAllMedicines.php")
     Call<MedicineResponse> getAllMedicine();
 
-    @GET("~tailor/Spine360/apis/getAllMedicinesType.php")
+    //@GET("~tailor/Spine360/apis/getAllMedicinesType.php")
+    @GET("/Aloha/apis/getAllMedicinesType.php")
     Call<MedicineTypeResponse> getAllMedicineType();
 
-    @GET("~tailor/Spine360/apis/getAllMedicineDosage.php")
+    //@GET("~tailor/Spine360/apis/getAllMedicineDosage.php")
+    @GET("/Aloha/apis/getAllMedicineDosage.php")
     Call<DosageResponse> getAllDosage();
 
-    @GET("~tailor/Spine360/apis/getAllInstruction.php")
+    //@GET("~tailor/Spine360/apis/getAllInstruction.php")
+    @GET("/Aloha/apis/getAllInstruction.php")
     Call<InstructionResponse> getAllInstruction();
+
+    @FormUrlEncoded
+    @POST("/Aloha/apis/addPrescription.php")
+    Call<UploadPrescriptionResponse> uploadPrescription(@FieldMap Map<String, String> params);
+
 }
