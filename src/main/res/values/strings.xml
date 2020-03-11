@@ -36,4 +36,6 @@
     <string name="advice">Advice</string>
     <string name="diagnosis">Diagnosis</string>
     <string name="next_visit">Next Visit</string>
+    <string name="complaint">Complaint:-</string>
+    <string name="remark">Remark:</string>
 </resources>

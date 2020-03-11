@@ -34,7 +34,7 @@
                     android:completionThreshold="1"
                     android:hint="@string/complaints"
                     android:imeOptions="actionNext"
-                    android:inputType="textAutoComplete"
+                    android:inputType="textMultiLine|text"
                     android:maxLines="3" />
 
 
@@ -206,19 +206,18 @@
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rv_old_prescription"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
+                    android:layout_height="wrap_content" />
 
 
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                <AutoCompleteTextView
+                    android:id="@+id/act_advice"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/et_advice"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="@string/advice"/>
-                </com.google.android.material.textfield.TextInputLayout>
+                    android:layout_height="wrap_content"
+                    android:completionThreshold="1"
+                    android:hint="@string/advice"
+                    android:imeOptions="actionNext"
+                    android:inputType="textAutoComplete"
+                    android:maxLines="3" />
 
                 <com.google.android.material.textfield.TextInputLayout
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"

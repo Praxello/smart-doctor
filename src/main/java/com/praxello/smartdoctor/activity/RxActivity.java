@@ -7,6 +7,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.annotation.SuppressLint;
 import android.app.DatePickerDialog;
 import android.app.ProgressDialog;
 import android.content.Intent;
@@ -32,9 +33,11 @@ import com.praxello.smartdoctor.AllKeys;
 import com.praxello.smartdoctor.CommonMethods;
 import com.praxello.smartdoctor.R;
 import com.praxello.smartdoctor.adapter.AddPrescriptionsAdapter;
+import com.praxello.smartdoctor.adapter.OldPrescriptionAdapter;
 import com.praxello.smartdoctor.adapter.autotextadapters.AllMedicineAdapter;
 import com.praxello.smartdoctor.adapter.autotextadapters.DiagnosisAdapter;
 import com.praxello.smartdoctor.adapter.autotextadapters.DosageAdapter;
+import com.praxello.smartdoctor.adapter.autotextadapters.GetAdviceAdapter;
 import com.praxello.smartdoctor.adapter.autotextadapters.GetAllComplaintsAdapter;
 import com.praxello.smartdoctor.adapter.autotextadapters.InstructionAdapter;
 import com.praxello.smartdoctor.adapter.autotextadapters.TypeAdapter;
@@ -47,17 +50,22 @@ import com.praxello.smartdoctor.model.allinstruction.InstructionData;
 import com.praxello.smartdoctor.model.allinstruction.InstructionResponse;
 import com.praxello.smartdoctor.model.allmedicine.MedicineData;
 import com.praxello.smartdoctor.model.allmedicine.MedicineResponse;
+import com.praxello.smartdoctor.model.allpatient.AllPatientData;
 import com.praxello.smartdoctor.model.getallcomplaints.GetAllComplaintsResponse;
 import com.praxello.smartdoctor.model.getalldiagnosis.AllDiagnosisResponse;
+import com.praxello.smartdoctor.model.getallprescription.GetAllPrescriptionResponse;
 import com.praxello.smartdoctor.model.medicinetype.MedicineType;
 import com.praxello.smartdoctor.model.medicinetype.MedicineTypeResponse;
 import com.praxello.smartdoctor.services.ApiRequestHelper;
 import com.praxello.smartdoctor.services.SmartQuiz;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -65,12 +73,13 @@ import butterknife.ButterKnife;
 public class RxActivity extends AppCompatActivity implements View.OnClickListener {
 
     public SmartQuiz smartQuiz;
+    @SuppressLint("StaticFieldLeak")
     public static AutoCompleteTextView actType;
     public static AutoCompleteTextView actMedicine;
     public static AutoCompleteTextView actMorning;
     public static AutoCompleteTextView actEvening;
     public static AutoCompleteTextView actNight;
-    public static  AutoCompleteTextView actNotesInstruction;
+    public static AutoCompleteTextView actNotesInstruction;
     @BindView(R.id.act_duration)
     public AutoCompleteTextView actDuration;
     @BindView(R.id.btn_clear)
@@ -79,25 +88,25 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
     public AppCompatButton btnAdd;
     @BindView(R.id.rv_new_prescription)
     public RecyclerView rvNewPrescription;
+    @BindView(R.id.rv_old_prescription)
+    public RecyclerView rvOldPrescription;
     @BindView(R.id.btn_add_prescription)
     public AppCompatButton btnAddPrescription;
-    @BindView(R.id.act_complaints)
-    public AutoCompleteTextView etComplaints;
-    @BindView(R.id.act_diagnosis)
-    public AutoCompleteTextView etDiagnosis;
-    @BindView(R.id.et_advice)
-    public EditText etAdvice;
-    @BindView(R.id.et_nextvisitdate)
-    public EditText etNextVisitDate;
-    ArrayList<MedicineType> medicineTypeArrayList=new ArrayList<>();
-    ArrayList<MedicineData> medicineDataArrayList=new ArrayList<>();
-    ArrayList<DosageData> dosageDataArrayList=new ArrayList<>();
-    ArrayList<InstructionData> instructionDataArrayList=new ArrayList<>();
+   // @BindView(R.id.act_complaints)
+    public static AutoCompleteTextView etComplaints;
+   // @BindView(R.id.act_diagnosis)
+    public static AutoCompleteTextView etDiagnosis;
+   // @BindView(R.id.et_advice)
+    public static AutoCompleteTextView etAdvice;
+    //@BindView(R.id.et_nextvisitdate)
+    public static EditText etNextVisitDate;
+
     private static String TAG="RxActivity";
-    ArrayList<AddMedicines> addMedicinesArrayList =new ArrayList<>();
+    public static ArrayList<AddMedicines> addMedicinesArrayList =new ArrayList<>();
     AddPrescriptionsAdapter addPrescriptionsAdapter;
     static String type="add";
     private int mYear, mMonth, mDay;
+    AllPatientData allPatientData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -106,26 +115,18 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
         ButterKnife.bind(this);
         smartQuiz = (SmartQuiz) getApplication();
 
+        if(getIntent().getParcelableExtra("data")!=null){
+            allPatientData=getIntent().getParcelableExtra("data");
+        }
+
         //basic intialisation...
         initViews();
 
-        //load Data Medicine type....
-        loadDataMedicineType();
+        //set Data to all Auto text view adapters....
+        setDataToAdapter();
 
-        //load All Medicine...
-        loadAllMedicines();
-
-        //load All Dosage...
-        loadAllDosage();
-
-        //load all Instruction...
-        loadAllInstruction();
-
-        //load all Complaints
-        loadAllComplaints();
-
-        //load all diagnosis...
-        loadAllDiagnosis();
+        //set previous prescription..
+        setPreviousPrescription();
 
         actMedicine.addTextChangedListener(new TextWatcher() {
             @Override
@@ -156,11 +157,11 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
         //Toolbar intialisation....
         Toolbar toolbar=findViewById(R.id.toolbar_rx);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
         toolbar.setTitle("Rx");
         toolbar.setTitleTextColor(Color.BLACK);
-        toolbar.getNavigationIcon().setColorFilter(getResources().getColor(R.color.black), PorterDuff.Mode.SRC_ATOP);
+        Objects.requireNonNull(toolbar.getNavigationIcon()).setColorFilter(getResources().getColor(R.color.black), PorterDuff.Mode.SRC_ATOP);
 
         //AutoCompleteTextview binding..
         actType=findViewById(R.id.act_type);
@@ -169,6 +170,10 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
         actNight=findViewById(R.id.act_night);
         actNotesInstruction=findViewById(R.id.act_notes_inst);
         actMedicine=findViewById(R.id.act_medicine);
+        etComplaints=findViewById(R.id.act_complaints);
+        etDiagnosis=findViewById(R.id.act_diagnosis);
+        etAdvice=findViewById(R.id.act_advice);
+        etNextVisitDate=findViewById(R.id.et_nextvisitdate);
 
         //Button click listeners...
         btnAdd.setOnClickListener(this);
@@ -184,8 +189,64 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
             }
         };
         rvNewPrescription.setLayoutManager(linearLayoutManager);
+        rvOldPrescription.setLayoutManager(new LinearLayoutManager(this));
     }
 
+    private void setDataToAdapter(){
+        //loadDataMedicineType();
+        if(DashBoardActivity.medicineTypeArrayList.size()>0){
+            TypeAdapter typeAdapter=new TypeAdapter(RxActivity.this,R.layout.layout_autocomplete_row,DashBoardActivity.medicineTypeArrayList);
+            actType.setAdapter(typeAdapter);
+            actType.setThreshold(1);
+        }
+
+        //load All Medicine...
+        if(DashBoardActivity.medicineDataArrayList.size()>0){
+            AllMedicineAdapter allMedicineAdapter=new AllMedicineAdapter(RxActivity.this,R.layout.layout_autocomplete_row,DashBoardActivity.medicineDataArrayList);
+            actMedicine.setAdapter(allMedicineAdapter);
+            actMedicine.setThreshold(1);
+        }
+
+        //load All Dosage...
+        if(DashBoardActivity.dosageDataArrayList.size()>0){
+            DosageAdapter dosageAdapter=new DosageAdapter(RxActivity.this,R.layout.layout_autocomplete_row,DashBoardActivity.dosageDataArrayList);
+            actMorning.setAdapter(dosageAdapter);
+            actMorning.setThreshold(1);
+            actEvening.setAdapter(dosageAdapter);
+            actEvening.setThreshold(1);
+            actNight.setAdapter(dosageAdapter);
+            actNight.setThreshold(1);
+        }
+
+        //load all Instruction...
+        if(DashBoardActivity.instructionDataArrayList.size()>0){
+            InstructionAdapter instructionAdapter=new InstructionAdapter(RxActivity.this,R.layout.layout_autocomplete_row,DashBoardActivity.instructionDataArrayList);
+            actNotesInstruction.setAdapter(instructionAdapter);
+            actNotesInstruction.setThreshold(1);
+        }
+
+
+        //load all Complaints
+        if(DashBoardActivity.getAllComplaintsDataArrayList.size()>0){
+            GetAllComplaintsAdapter getAllComplaintsAdapter=new GetAllComplaintsAdapter(RxActivity.this,R.layout.layout_autocomplete_row,DashBoardActivity.getAllComplaintsDataArrayList);
+            etComplaints.setAdapter(getAllComplaintsAdapter);
+            etComplaints.setThreshold(1);
+        }
+
+        //load all diagnosis...
+        if(DashBoardActivity.allDiagnosisDataArrayList.size()>0){
+            DiagnosisAdapter diagnosisAdapter=new DiagnosisAdapter(RxActivity.this,R.layout.layout_autocomplete_row,DashBoardActivity.allDiagnosisDataArrayList);
+            etDiagnosis.setAdapter(diagnosisAdapter);
+            etDiagnosis.setThreshold(1);
+        }
+
+        //load all advice...
+        if(DashBoardActivity.getAdviceDataArrayList.size()>0){
+            GetAdviceAdapter getAdviceAdapter=new GetAdviceAdapter(RxActivity.this,R.layout.layout_autocomplete_row,DashBoardActivity.getAdviceDataArrayList);
+            etAdvice.setAdapter(getAdviceAdapter);
+            etAdvice.setThreshold(1);
+        }
+    }
     @Override
     public void onClick(View v) {
         switch (v.getId()){
@@ -206,7 +267,7 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
                 break;
 
             case R.id.btn_add_prescription:
-                String data=new Gson().toJson(addMedicinesArrayList);
+               // String data=new Gson().toJson(addMedicinesArrayList);
                 uploadPrescription();
                 break;
 
@@ -218,16 +279,8 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
                 mDay = c.get(Calendar.DAY_OF_MONTH);
 
                 DatePickerDialog datePickerDialog = new DatePickerDialog(this,
-                        new DatePickerDialog.OnDateSetListener() {
-
-                            @Override
-                            public void onDateSet(DatePicker view, int year,
-                                                  int monthOfYear, int dayOfMonth) {
-
-                                etNextVisitDate.setText(year + "-" + (monthOfYear + 1) + "-" + dayOfMonth);
-
-                            }
-                        }, mYear, mMonth, mDay);
+                        (view, year, monthOfYear, dayOfMonth) ->
+                                etNextVisitDate.setText(year + "-" + String.format("%02d", (monthOfYear + 1)) + "-" + dayOfMonth), mYear, mMonth, mDay);
                 // datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis() - 1000);
                 datePickerDialog.show();
                 break;
@@ -244,12 +297,12 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
                 actNotesInstruction.getText().toString());
 
         if(type.equals("add")){
-            addMedicinesArrayList.add(addMedicines);
+             addMedicinesArrayList.add(addMedicines);
              addPrescriptionsAdapter=new AddPrescriptionsAdapter(RxActivity.this, addMedicinesArrayList);
              rvNewPrescription.setAdapter(addPrescriptionsAdapter);
         }else if(type.equals("update")){
-            addMedicinesArrayList.set(position, addMedicines);
-            addPrescriptionsAdapter.notifyItemChanged(position);
+            addMedicinesArrayList.add(addMedicines);
+            addPrescriptionsAdapter.notifyDataSetChanged();
             btnAdd.setText("Add");
             RxActivity.type="add";
         }
@@ -274,11 +327,16 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
             medicinesDetails.add(jsonObject);
         }
 
+        Date c = Calendar.getInstance().getTime();
+
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+        String formattedDate = df.format(c);
+
         PostData postdata=new PostData(medicinesDetails,
-                "14",
+                allPatientData.getPatientId(),
                 CommonMethods.getPrefrence(RxActivity.this,AllKeys.USER_ID),
-                etNextVisitDate.getText().toString(),
-                "2020-03-06",
+                "",
+                formattedDate,
                 "",
                 "",
                 "",
@@ -352,231 +410,9 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
         btnAdd.setText("Update");
         RxActivity.type="update";
 
+        addMedicinesArrayList.remove(position);
+        //addPrescriptionsAdapter.notifyItemRemoved(position);
         //addPrescriptions("update",position);
-    }
-
-    private void loadDataMedicineType(){
-        final ProgressDialog progress = new ProgressDialog(RxActivity.this);
-        progress.setMessage("Please wait...");
-        progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        progress.show();
-        progress.setCancelable(false);
-
-       smartQuiz.getApiRequestHelper().getAllMedicineType(new ApiRequestHelper.OnRequestComplete() {
-            @Override
-            public void onSuccess(Object object) {
-                MedicineTypeResponse medicineTypeResponse=(MedicineTypeResponse) object;
-
-                Log.e(TAG, "onSuccess: "+medicineTypeResponse.getResponsecode());
-                Log.e(TAG, "onSuccess: "+medicineTypeResponse.getMessage());
-                progress.dismiss();
-                if(medicineTypeResponse.getResponsecode()==200){
-                    //Toast.makeText(RxActivity.this, medicineTypeResponse.getMessage(), Toast.LENGTH_SHORT).show();
-                    if(medicineTypeResponse.getData()!=null){
-                        medicineTypeArrayList = medicineTypeResponse.getData();
-                        TypeAdapter typeAdapter=new TypeAdapter(RxActivity.this,R.layout.layout_autocomplete_row,medicineTypeArrayList);
-                        actType.setAdapter(typeAdapter);
-                        actType.setThreshold(1);
-                    }
-
-                }else{
-                    Toast.makeText(RxActivity.this, medicineTypeResponse.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-            @Override
-            public void onFailure(String apiResponse) {
-                progress.dismiss();
-                Toast.makeText(RxActivity.this, apiResponse, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void loadAllComplaints(){
-        final ProgressDialog progress = new ProgressDialog(RxActivity.this);
-        progress.setMessage("Please wait...");
-        progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        progress.show();
-        progress.setCancelable(false);
-
-        smartQuiz.getApiRequestHelper().getAllComplaints(new ApiRequestHelper.OnRequestComplete() {
-            @Override
-            public void onSuccess(Object object) {
-                GetAllComplaintsResponse getAllComplaintsResponse=(GetAllComplaintsResponse) object;
-
-                Log.e(TAG, "onSuccess: "+getAllComplaintsResponse.getResponsecode());
-                Log.e(TAG, "onSuccess: "+getAllComplaintsResponse.getMessage());
-                progress.dismiss();
-                if(getAllComplaintsResponse.getResponsecode()==200){
-                    //Toast.makeText(RxActivity.this, medicineTypeResponse.getMessage(), Toast.LENGTH_SHORT).show();
-                    if(getAllComplaintsResponse.getData()!=null){
-                        GetAllComplaintsAdapter getAllComplaintsAdapter=new GetAllComplaintsAdapter(RxActivity.this,R.layout.layout_autocomplete_row,getAllComplaintsResponse.getData());
-                        etComplaints.setAdapter(getAllComplaintsAdapter);
-                        etComplaints.setThreshold(1);
-                    }
-
-                }else{
-                    Toast.makeText(RxActivity.this, getAllComplaintsResponse.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-            @Override
-            public void onFailure(String apiResponse) {
-                progress.dismiss();
-                Toast.makeText(RxActivity.this, apiResponse, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void loadAllDiagnosis(){
-        final ProgressDialog progress = new ProgressDialog(RxActivity.this);
-        progress.setMessage("Please wait...");
-        progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        progress.show();
-        progress.setCancelable(false);
-
-        smartQuiz.getApiRequestHelper().getAllDiagnosis(new ApiRequestHelper.OnRequestComplete() {
-            @Override
-            public void onSuccess(Object object) {
-                AllDiagnosisResponse allDiagnosisResponse=(AllDiagnosisResponse) object;
-
-                Log.e(TAG, "onSuccess: "+allDiagnosisResponse.getResponsecode());
-                Log.e(TAG, "onSuccess: "+allDiagnosisResponse.getMessage());
-                progress.dismiss();
-                if(allDiagnosisResponse.getResponsecode()==200){
-                    //Toast.makeText(RxActivity.this, medicineTypeResponse.getMessage(), Toast.LENGTH_SHORT).show();
-                    if(allDiagnosisResponse.getData()!=null){
-                        DiagnosisAdapter diagnosisAdapter=new DiagnosisAdapter(RxActivity.this,R.layout.layout_autocomplete_row,allDiagnosisResponse.getData());
-                        etDiagnosis.setAdapter(diagnosisAdapter);
-                        etDiagnosis.setThreshold(1);
-                    }
-
-                }else{
-                    Toast.makeText(RxActivity.this, allDiagnosisResponse.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-            @Override
-            public void onFailure(String apiResponse) {
-                progress.dismiss();
-                Toast.makeText(RxActivity.this, apiResponse, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void loadAllMedicines(){
-        final ProgressDialog progress = new ProgressDialog(RxActivity.this);
-        progress.setMessage("Please wait...");
-        progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        progress.show();
-        progress.setCancelable(false);
-
-       smartQuiz.getApiRequestHelper().getAllMedicine(new ApiRequestHelper.OnRequestComplete() {
-            @Override
-            public void onSuccess(Object object) {
-                MedicineResponse medicineResponse=(MedicineResponse) object;
-
-                Log.e(TAG, "onSuccess: "+medicineResponse.getResponsecode());
-                Log.e(TAG, "onSuccess: "+medicineResponse.getMessage());
-
-                progress.dismiss();
-                if(medicineResponse.getResponsecode()==200){
-                    //Toast.makeText(RxActivity.this, medicineResponse.getMessage(), Toast.LENGTH_SHORT).show();
-                    if(medicineResponse.getData()!=null){    actType.setText("");
-                   actMorning.setText("");
-                   actEvening.setText("");
-                   actNight.setText("");
-                   actNotesInstruction.setText("");
-                   actDuration.setText("");
-                        medicineDataArrayList = medicineResponse.getData();
-                        AllMedicineAdapter allMedicineAdapter=new AllMedicineAdapter(RxActivity.this,R.layout.layout_autocomplete_row,medicineDataArrayList);
-                        actMedicine.setAdapter(allMedicineAdapter);
-                        actMedicine.setThreshold(1);
-                    }
-
-                }else{
-                    Toast.makeText(RxActivity.this, medicineResponse.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-            @Override
-            public void onFailure(String apiResponse) {
-                progress.dismiss();
-                Toast.makeText(RxActivity.this, apiResponse, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void loadAllDosage(){
-        final ProgressDialog progress = new ProgressDialog(RxActivity.this);
-        progress.setMessage("Please wait...");
-        progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        progress.show();
-        progress.setCancelable(false);
-
-        smartQuiz.getApiRequestHelper().getAllDosage(new ApiRequestHelper.OnRequestComplete() {
-            @Override
-            public void onSuccess(Object object) {
-                DosageResponse dosageResponse=(DosageResponse) object;
-
-                Log.e(TAG, "onSuccess: "+dosageResponse.getResponsecode());
-                Log.e(TAG, "onSuccess: "+dosageResponse.getMessage());
-                progress.dismiss();
-                if(dosageResponse.getResponsecode()==200){
-                   // Toast.makeText(RxActivity.this, dosageResponse.getMessage(), Toast.LENGTH_SHORT).show();
-                    if(dosageResponse.getData()!=null){
-                        dosageDataArrayList=dosageResponse.getData();
-                        DosageAdapter dosageAdapter=new DosageAdapter(RxActivity.this,R.layout.layout_autocomplete_row,dosageDataArrayList);
-                        actMorning.setAdapter(dosageAdapter);
-                        actMorning.setThreshold(1);
-                        actEvening.setAdapter(dosageAdapter);
-                        actEvening.setThreshold(1);
-                        actNight.setAdapter(dosageAdapter);
-                        actNight.setThreshold(1);
-                    }
-
-                }else{
-                    Toast.makeText(RxActivity.this, dosageResponse.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-            @Override
-            public void onFailure(String apiResponse) {
-                progress.dismiss();
-                Toast.makeText(RxActivity.this, apiResponse, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void loadAllInstruction() {
-        final ProgressDialog progress = new ProgressDialog(RxActivity.this);
-        progress.setMessage("Please wait...");
-        progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        progress.show();
-        progress.setCancelable(false);
-
-        smartQuiz.getApiRequestHelper().getAllInstruction(new ApiRequestHelper.OnRequestComplete() {
-            @Override
-            public void onSuccess(Object object) {
-                InstructionResponse instructionResponse=(InstructionResponse) object;
-
-                Log.e(TAG, "onSuccess: "+instructionResponse.getResponsecode());
-                Log.e(TAG, "onSuccess: "+instructionResponse.getMessage());
-                progress.dismiss();
-                if(instructionResponse.getResponsecode()==200){
-                    //Toast.makeText(RxActivity.this, instructionResponse.getMessage(), Toast.LENGTH_SHORT).show();
-                    if(instructionResponse.getData()!=null){
-                        instructionDataArrayList=instructionResponse.getData();
-                        InstructionAdapter instructionAdapter=new InstructionAdapter(RxActivity.this,R.layout.layout_autocomplete_row,instructionDataArrayList);
-                        actNotesInstruction.setAdapter(instructionAdapter);
-                        actNotesInstruction.setThreshold(1);
-                    }
-
-                }else{
-                    Toast.makeText(RxActivity.this, instructionResponse.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-            @Override
-            public void onFailure(String apiResponse) {
-                progress.dismiss();
-                Toast.makeText(RxActivity.this, apiResponse, Toast.LENGTH_SHORT).show();
-            }
-        });
     }
 
     private void clearAllFields(){
@@ -589,6 +425,39 @@ public class RxActivity extends AppCompatActivity implements View.OnClickListene
         actDuration.setText("");
     }
 
+    private void setPreviousPrescription(){
+        final ProgressDialog progress = new ProgressDialog(RxActivity.this);
+        progress.setMessage("Please wait...");
+        progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progress.show();
+        progress.setCancelable(false);
+
+        smartQuiz.getApiRequestHelper().getAllPrescription(String.valueOf(allPatientData.getPatientId()),new ApiRequestHelper.OnRequestComplete() {
+            @Override
+            public void onSuccess(Object object) {
+                GetAllPrescriptionResponse getAllPrescriptionResponse=(GetAllPrescriptionResponse) object;
+
+                //Log.e(TAG, "onSuccess: "+dosageResponse.getResponsecode());
+                // Log.e(TAG, "onSuccess: "+dosageResponse.getMessage());
+                progress.dismiss();
+                if(getAllPrescriptionResponse.getResponsecode()==200){
+                    // Toast.makeText(RxActivity.this, dosageResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                    if(getAllPrescriptionResponse.getData()!=null){
+                        OldPrescriptionAdapter oldPrescriptionAdapter=new OldPrescriptionAdapter(RxActivity.this,getAllPrescriptionResponse.getData());
+                        rvOldPrescription.setAdapter(oldPrescriptionAdapter);
+                    }
+
+                }else{
+                    Toast.makeText(RxActivity.this, getAllPrescriptionResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            }
+            @Override
+            public void onFailure(String apiResponse) {
+                progress.dismiss();
+                Toast.makeText(RxActivity.this, apiResponse, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
     private boolean isValidated(){
 
         if(actType.getText().toString().isEmpty()){

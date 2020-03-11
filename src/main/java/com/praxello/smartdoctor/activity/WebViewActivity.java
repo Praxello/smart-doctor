@@ -55,8 +55,11 @@ public class WebViewActivity extends AppCompatActivity {
             webview.getSettings().setLoadsImagesAutomatically(true);
             webview.getSettings().setJavaScriptEnabled(true);
             webview.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
-            webview.loadUrl("https://docs.google.com/viewer?url="+url);
-
+            if(url.contains("pdf")){
+                webview.loadUrl("https://docs.google.com/viewer?url="+url);
+            }else{
+                webview.loadUrl(url);
+            }
 
             webview.setWebViewClient(new WebViewClient() {
                 @Override
@@ -97,6 +100,11 @@ public class WebViewActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             case android.R.id.home:
                 CommonMethods.hideSoftKeyboard(WebViewActivity.this);
+                RxActivity.addMedicinesArrayList.clear();
+                RxActivity.etComplaints.setText("");
+                RxActivity.etDiagnosis.setText("");
+                RxActivity.etAdvice.setText("");
+                RxActivity.etNextVisitDate.setText("");
                 finish();
                 overridePendingTransition(R.anim.activity_open_scale, R.anim.activity_close_translate);
                 return true;
@@ -107,6 +115,11 @@ public class WebViewActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         super.onBackPressed();
+        RxActivity.addMedicinesArrayList.clear();
+        RxActivity.etComplaints.setText("");
+        RxActivity.etDiagnosis.setText("");
+        RxActivity.etAdvice.setText("");
+        RxActivity.etNextVisitDate.setText("");
         overridePendingTransition(R.anim.activity_open_scale, R.anim.activity_close_translate);
     }
 }

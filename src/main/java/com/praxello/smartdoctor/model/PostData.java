@@ -10,7 +10,7 @@ public class PostData {
     @SerializedName("medicinesDetails")
     private JsonArray medicinesDetails;
 
-    private String patientId;
+    private int patientId;
     private String doctorId;
     private String nextvisit;
     private String visitDate;
@@ -26,7 +26,7 @@ public class PostData {
     private String diagnosis;
     private String remarks;
 
-    public PostData(JsonArray medicinesDetails, String patientId, String doctorId, String nextvisit, String visitDate, String pulse, String height, String weight, String west, String hip, String temp, String spo2, String bp, String complaints, String diagnosis, String remarks) {
+    public PostData(JsonArray medicinesDetails, int patientId, String doctorId, String nextvisit, String visitDate, String pulse, String height, String weight, String west, String hip, String temp, String spo2, String bp, String complaints, String diagnosis, String remarks) {
         this.medicinesDetails = medicinesDetails;
         this.patientId = patientId;
         this.doctorId = doctorId;
@@ -54,11 +54,11 @@ public class PostData {
         this.medicinesDetails = medicinesDetails;
     }
 
-    public String getPatientId() {
+    public int getPatientId() {
         return patientId;
     }
 
-    public void setPatientId(String patientId) {
+    public void setPatientId(int patientId) {
         this.patientId = patientId;
     }
 

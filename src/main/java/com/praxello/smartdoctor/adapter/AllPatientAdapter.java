@@ -67,9 +67,7 @@ public class AllPatientAdapter extends RecyclerView.Adapter<AllPatientAdapter.Al
         holder.ivRx.setOnClickListener(v -> {
             Activity activity=(Activity) context;
             Intent intent=new Intent(context, RxActivity.class);
-            //intent.putExtra("data",quizDataArrayList.get(position).getQuestions());
-            //intent.putExtra("data",allPatientDataArrayList.get(position));
-            //intent.putExtra("position",position);
+            intent.putExtra("data",allPatientDataArrayList.get(position));
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
             activity.startActivity(intent);
             activity.overridePendingTransition(R.anim.activity_open_translate, R.anim.activity_close_scale);

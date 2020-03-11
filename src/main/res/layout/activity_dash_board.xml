@@ -20,7 +20,7 @@
             android:orientation="horizontal">
 
             <LinearLayout
-
+                android:id="@+id/ll_allpatients"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
@@ -28,7 +28,7 @@
                 android:orientation="vertical">
 
                 <LinearLayout
-                    android:id="@+id/ll_allpatients"
+
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
@@ -59,6 +59,7 @@
                 android:background="@color/grey100"
                 android:layout_marginTop="@dimen/margin100"/>
             <LinearLayout
+                android:id="@+id/ll_collections"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
@@ -66,7 +67,7 @@
                 android:orientation="vertical">
 
                 <LinearLayout
-                    android:id="@+id/ll_collections"
+
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"

@@ -18,8 +18,10 @@ import com.praxello.smartdoctor.model.allinstruction.InstructionResponse;
 import com.praxello.smartdoctor.model.allmedicine.MedicineResponse;
 import com.praxello.smartdoctor.model.allpatient.AddPatientResponse;
 import com.praxello.smartdoctor.model.allpatient.PatientResponse;
+import com.praxello.smartdoctor.model.getAdvice.GetAdviceResponse;
 import com.praxello.smartdoctor.model.getallcomplaints.GetAllComplaintsResponse;
 import com.praxello.smartdoctor.model.getalldiagnosis.AllDiagnosisResponse;
+import com.praxello.smartdoctor.model.getallprescription.GetAllPrescriptionResponse;
 import com.praxello.smartdoctor.model.login.LoginResponse;
 import com.praxello.smartdoctor.model.medicinetype.MedicineTypeResponse;
 
@@ -135,6 +137,61 @@ public class ApiRequestHelper {
     public void getAllDiagnosis( final OnRequestComplete onRequestComplete) {
         Call<AllDiagnosisResponse> call = SmartQuizServices.getAllDiagnosis();
         call_api_diagnosis(onRequestComplete, call);
+    }
+
+    public void getAdvice( final OnRequestComplete onRequestComplete) {
+        Call<GetAdviceResponse> call = SmartQuizServices.getAdvice();
+        call_api_advice(onRequestComplete, call);
+    }
+
+    public void getAllPrescription(String parentId, final OnRequestComplete onRequestComplete) {
+        Call<GetAllPrescriptionResponse> call = SmartQuizServices.getAllPrescription(parentId);
+        call_api_all_prescription(onRequestComplete, call);
+    }
+
+    private void call_api_all_prescription(final OnRequestComplete onRequestComplete, Call<GetAllPrescriptionResponse> call) {
+        call.enqueue(new Callback<GetAllPrescriptionResponse>() {
+            @Override
+            public void onResponse(Call<GetAllPrescriptionResponse> call, Response<GetAllPrescriptionResponse> response) {
+                if (response.isSuccessful()) {
+                    onRequestComplete.onSuccess(response.body());
+                } else {
+                    try {
+                        onRequestComplete.onFailure(Html.fromHtml(response.errorBody().string()) + "");
+                    } catch (IOException e) {
+                        onRequestComplete.onFailure("Unproper Response");
+                        e.printStackTrace();
+                    }
+                }
+            }
+            @Override
+            public void onFailure(Call<GetAllPrescriptionResponse> call, Throwable t) {
+                handle_fail_response(t, onRequestComplete);
+            }
+        });
+    }
+
+
+    private void call_api_advice(final OnRequestComplete onRequestComplete, Call<GetAdviceResponse> call) {
+        call.enqueue(new Callback<GetAdviceResponse>() {
+            @Override
+            public void onResponse(Call<GetAdviceResponse> call, Response<GetAdviceResponse> response) {
+                if (response.isSuccessful()) {
+                    onRequestComplete.onSuccess(response.body());
+                } else {
+                    try {
+                        onRequestComplete.onFailure(Html.fromHtml(response.errorBody().string()) + "");
+                    } catch (IOException e) {
+                        onRequestComplete.onFailure("Unproper Response");
+                        e.printStackTrace();
+                    }
+                }
+            }
+            @Override
+            public void onFailure(Call<GetAdviceResponse> call, Throwable t) {
+                handle_fail_response(t, onRequestComplete);
+            }
+        });
     }
 
     private void call_api_diagnosis(final OnRequestComplete onRequestComplete, Call<AllDiagnosisResponse> call) {
